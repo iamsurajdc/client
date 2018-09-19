@@ -55,6 +55,14 @@ export type _Assets = {
   reserves: I.List<Reserve>,
 }
 
+export type CurrencyCode = StellarRPCTypes.OutsideCurrencyCode
+
+export type _LocalCurrency = {
+  description: string,
+  code: CurrencyCode,
+  symbol: string,
+  name: string,
+}
 export type _BuildingPayment = {
   amount: string,
   currency: string,
@@ -109,10 +117,12 @@ export type _AssetDescription = {
 
 export type AssetDescription = I.RecordOf<_AssetDescription>
 
+export type Asset = 'native' | 'currency' | AssetDescription
+
 export type _Request = {
   amount: string, // The number alone
   amountDescription: string, // The amount the request was made in (XLM, asset, or equivalent fiat) (i.e. '<number> <code>')
-  asset: 'native' | 'currency' | AssetDescription,
+  asset: Asset,
   completed: boolean,
   completedTransactionID: ?StellarRPCTypes.KeybaseTransactionID,
   currencyCode: string, // set if asset === 'currency'
@@ -133,6 +143,7 @@ export type BuiltPayment = I.RecordOf<_BuiltPayment>
 
 export type Payment = I.RecordOf<_Payment>
 
+export type Currency = I.RecordOf<_LocalCurrency>
 export type Request = I.RecordOf<_Request>
 
 export type ValidationState = 'none' | 'waiting' | 'error' | 'valid'
@@ -146,6 +157,7 @@ export type _State = {
   builtPayment: BuiltPayment,
   createNewAccountError: string,
   exportedSecretKey: HiddenString,
+  exportedSecretKeyAccountID: AccountID,
   linkExistingAccountError: string,
   requests: I.Map<StellarRPCTypes.KeybaseRequestID, Request>,
   secretKey: HiddenString,
@@ -157,6 +169,8 @@ export type _State = {
   pendingMap: I.Map<AccountID, I.List<Payment>>,
   secretKeyMap: I.Map<AccountID, HiddenString>,
   selectedAccount: AccountID,
+  currencies: I.List<Currency>,
+  currencyMap: I.Map<AccountID, Currency>,
 }
 
 export type State = I.RecordOf<_State>

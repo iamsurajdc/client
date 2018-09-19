@@ -334,11 +334,18 @@ func (e *Kex2Provisionee) handleDidCounterSign(m libkb.MetaContext, sig []byte, 
 		return err
 	}
 
-	// store the ephemeralkeys, if any. If this fails after we have posted the
-	// client will no not have access to the userEK it was just reboxed for
-	// unfortunately. Without any EKs, the normal generation machinery will
-	// take over and they will make a new userEK
-	return e.ekReboxer.storeEKs(m)
+	// Store the ephemeralkeys, if any. If this fails after we have
+	// posted the client will not have access to the userEK it was
+	// just reboxed for unfortunately. Without any EKs, the normal
+	// generation machinery will take over and they will make a new
+	// userEK.
+	if err := e.ekReboxer.storeEKs(m); err != nil {
+		// Swallow the error - provisioning has already happened and
+		// we've already save the config, there's no going back.
+		m.CDebugf("Unable to store EKs: %s", err)
+	}
+
+	return nil
 }
 
 // updateTemporarySession commits the session token and csrf token to our temporary session,
@@ -362,13 +369,9 @@ func (e *Kex2Provisionee) decodeSig(sig []byte) (*decodedSig, error) {
 	if err != nil {
 		return nil, err
 	}
-	packet, err := libkb.DecodePacket(body)
+	naclSig, err := libkb.DecodeNaclSigInfoPacket(body)
 	if err != nil {
 		return nil, err
-	}
-	naclSig, ok := packet.Body.(*libkb.NaclSigInfo)
-	if !ok {
-		return nil, libkb.UnmarshalError{T: "Nacl signature"}
 	}
 	jw, err := jsonw.Unmarshal(naclSig.Payload)
 	if err != nil {

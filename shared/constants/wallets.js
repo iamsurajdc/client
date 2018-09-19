@@ -53,6 +53,7 @@ const makeState: I.RecordFactory<Types._State> = I.Record({
   builtPayment: makeBuiltPayment(),
   createNewAccountError: '',
   exportedSecretKey: new HiddenString(''),
+  exportedSecretKeyAccountID: Types.noAccountID,
   linkExistingAccountError: '',
   paymentsMap: I.Map(),
   pendingMap: I.Map(),
@@ -62,6 +63,8 @@ const makeState: I.RecordFactory<Types._State> = I.Record({
   secretKeyMap: I.Map(),
   secretKeyValidationState: 'none',
   selectedAccount: Types.noAccountID,
+  currencies: I.List(),
+  currencyMap: I.Map(),
 })
 
 const buildPaymentResultToBuiltPayment = (b: RPCTypes.BuildPaymentResLocal) =>
@@ -119,6 +122,21 @@ const assetsResultToAssets = (w: RPCTypes.AccountAssetLocal) =>
     reserves: I.List((w.reserves || []).map(makeReserve)),
   })
 
+const makeCurrencies: I.RecordFactory<Types._LocalCurrency> = I.Record({
+  description: '',
+  code: '',
+  symbol: '',
+  name: '',
+})
+
+const currenciesResultToCurrencies = (w: RPCTypes.CurrencyLocal) =>
+  makeCurrencies({
+    description: w.description,
+    code: w.code,
+    symbol: w.symbol,
+    name: w.name,
+  })
+
 const makePayment: I.RecordFactory<Types._Payment> = I.Record({
   amountDescription: '',
   delta: 'none',
@@ -139,6 +157,13 @@ const makePayment: I.RecordFactory<Types._Payment> = I.Record({
   txID: '',
   worth: '',
   worthCurrency: '',
+})
+
+const makeCurrency: I.RecordFactory<Types._LocalCurrency> = I.Record({
+  description: '',
+  code: '',
+  symbol: '',
+  name: '',
 })
 
 const paymentResultToPayment = (w: RPCTypes.PaymentOrErrorLocal) => {
@@ -236,15 +261,24 @@ const paymentToYourRole = (p: Types.Payment, username: string): 'sender' | 'rece
   return p.delta === 'increase' ? 'receiver' : 'sender'
 }
 
+const changeAccountNameWaitingKey = 'wallets:changeAccountName'
 const createNewAccountWaitingKey = 'wallets:createNewAccount'
+const changeDisplayCurrencyWaitingKey = 'wallets:changeDisplayCurrency'
 const linkExistingWaitingKey = 'wallets:linkExisting'
 const loadEverythingWaitingKey = 'wallets:loadEverything'
 const sendPaymentWaitingKey = 'wallets:stellarSend'
 const requestPaymentWaitingKey = 'wallets:requestPayment'
+const setAccountAsDefaultWaitingKey = 'wallets:setAccountAsDefault'
+const deleteAccountWaitingKey = 'wallets:deleteAccount'
 
 const getAccountIDs = (state: TypedState) => state.wallets.accountMap.keySeq().toList()
 
 const getSelectedAccount = (state: TypedState) => state.wallets.selectedAccount
+
+const getDisplayCurrencies = (state: TypedState) => state.wallets.currencies
+
+const getDisplayCurrency = (state: TypedState, accountID?: Types.AccountID) =>
+  state.wallets.currencyMap.get(accountID || getSelectedAccount(state), makeCurrency())
 
 const getPayments = (state: TypedState, accountID?: Types.AccountID) =>
   state.wallets.paymentsMap.get(accountID || getSelectedAccount(state), I.List())
@@ -266,6 +300,10 @@ const getRequest = (state: TypedState, requestID: RPCTypes.KeybaseRequestID) =>
 const getAccount = (state: TypedState, accountID?: Types.AccountID) =>
   state.wallets.accountMap.get(accountID || getSelectedAccount(state), makeAccount())
 
+const getAccountName = (account: Types.Account) =>
+  account.name ||
+  (account.accountID !== Types.noAccountID ? Types.accountIDToString(account.accountID) : null)
+
 const getDefaultAccountID = (state: TypedState) => {
   const defaultAccount = state.wallets.accountMap.find(a => a.isDefault)
   return defaultAccount ? defaultAccount.accountID : null
@@ -280,17 +318,28 @@ const getFederatedAddress = (state: TypedState, accountID?: Types.AccountID) => 
   return username && account.isDefault ? `${username}*keybase.io` : ''
 }
 
-const getSecretKey = (state: TypedState, accountID: Types.AccountID) => state.wallets.exportedSecretKey
+const getSecretKey = (state: TypedState, accountID: Types.AccountID) =>
+  accountID === state.wallets.exportedSecretKeyAccountID
+    ? state.wallets.exportedSecretKey
+    : new HiddenString('')
 
 export {
   accountResultToAccount,
   assetsResultToAssets,
+  changeDisplayCurrencyWaitingKey,
+  currenciesResultToCurrencies,
+  changeAccountNameWaitingKey,
+  balanceDeltaToString,
   buildPaymentResultToBuiltPayment,
   confirmFormRouteKey,
   createNewAccountWaitingKey,
+  deleteAccountWaitingKey,
   getAccountIDs,
+  getAccountName,
   getAccount,
   getAssets,
+  getDisplayCurrencies,
+  getDisplayCurrency,
   getDefaultAccountID,
   getFederatedAddress,
   getPayment,
@@ -303,7 +352,9 @@ export {
   linkExistingWaitingKey,
   loadEverythingWaitingKey,
   makeAccount,
+  makeAssetDescription,
   makeAssets,
+  makeCurrencies,
   makeBuildingPayment,
   makeBuiltPayment,
   makePayment,
@@ -318,4 +369,6 @@ export {
   sendPaymentWaitingKey,
   sendReceiveFormRouteKey,
   sendReceiveFormRoutes,
+  setAccountAsDefaultWaitingKey,
+  statusSimplifiedToString,
 }

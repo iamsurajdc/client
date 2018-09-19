@@ -33,6 +33,7 @@ import (
 type configGetter interface {
 	GetAPITimeout() (time.Duration, bool)
 	GetAppType() AppType
+	IsMobileExtension() (bool, bool)
 	GetSlowGregorConn() (bool, bool)
 	GetAutoFork() (bool, bool)
 	GetChatDbFilename() string
@@ -54,6 +55,7 @@ type configGetter interface {
 	GetGregorSaveInterval() (time.Duration, bool)
 	GetGregorURI() string
 	GetHome() string
+	GetMobileSharedHome() string
 	GetLinkCacheSize() (int, bool)
 	GetLocalRPCDebug() string
 	GetLocalTrackMaxAge() (time.Duration, bool)
@@ -89,6 +91,8 @@ type configGetter interface {
 	GetChatInboxSourceLocalizeThreads() (int, bool)
 	GetPayloadCacheSize() (int, bool)
 	GetRememberPassphrase() (bool, bool)
+	GetAttachmentHTTPStartPort() (int, bool)
+	GetAttachmentDisableMulti() (bool, bool)
 }
 
 type CommandLine interface {
@@ -189,6 +193,7 @@ type UpdaterConfigReader interface {
 
 type ConfigWriterTransacter interface {
 	Commit() error
+	Rollback() error
 	Abort() error
 }
 
@@ -408,7 +413,6 @@ type TerminalUI interface {
 	PromptForConfirmation(prompt string) error
 	PromptPassword(PromptDescriptor, string) (string, error)
 	PromptYesNo(PromptDescriptor, string, PromptDefault) (bool, error)
-	Tablify(headings []string, rowfunc func() []string)
 	TerminalSize() (width int, height int)
 }
 
@@ -531,7 +535,7 @@ const (
 )
 
 type ProofChecker interface {
-	CheckStatus(m MetaContext, h SigHint, pcm ProofCheckerMode, pvlU PvlUnparsed) ProofError
+	CheckStatus(m MetaContext, h SigHint, pcm ProofCheckerMode, pvlU keybase1.MerkleStoreEntry) ProofError
 	GetTorError() ProofError
 }
 
@@ -574,11 +578,13 @@ type ServiceType interface {
 
 type ExternalServicesCollector interface {
 	GetServiceType(n string) ServiceType
-	ListProofCheckers(mode RunMode) []string
+	ListProofCheckers() []string
 }
 
-type PvlSource interface {
-	GetPVL(m MetaContext) (PvlUnparsed, error)
+// Generic store for data that is hashed into the merkle root. Used by pvl and
+// parameterized proofs.
+type MerkleStore interface {
+	GetLatestEntry(m MetaContext) (keybase1.MerkleStoreEntry, error)
 }
 
 // UserChangedHandler is a generic interface for handling user changed events.
@@ -613,6 +619,7 @@ type TeamLoader interface {
 	// Untrusted hint of what a team's latest seqno is
 	HintLatestSeqno(ctx context.Context, id keybase1.TeamID, seqno keybase1.Seqno) error
 	ResolveNameToIDUntrusted(ctx context.Context, teamName keybase1.TeamName, public bool, allowCache bool) (id keybase1.TeamID, err error)
+	ForceRepollUntil(ctx context.Context, t gregor.TimeOrOffset) error
 	OnLogout()
 	// Clear the in-memory cache. Does not affect the disk cache.
 	ClearMem()
@@ -620,7 +627,14 @@ type TeamLoader interface {
 
 type FastTeamLoader interface {
 	Load(MetaContext, keybase1.FastTeamLoadArg) (keybase1.FastTeamLoadRes, error)
+	// Untrusted hint of what a team's latest seqno is
+	HintLatestSeqno(m MetaContext, id keybase1.TeamID, seqno keybase1.Seqno) error
 	OnLogout()
+}
+
+type TeamAuditor interface {
+	AuditTeam(m MetaContext, id keybase1.TeamID, isPublic bool, headMerkleSeqno keybase1.Seqno, chain map[keybase1.Seqno]keybase1.LinkID, maxSeqno keybase1.Seqno) (err error)
+	OnLogout(m MetaContext)
 }
 
 type Stellar interface {
@@ -791,9 +805,6 @@ type ChatHelper interface {
 	GetMessages(ctx context.Context, uid gregor1.UID, convID chat1.ConversationID,
 		msgIDs []chat1.MessageID, resolveSupersedes bool) ([]chat1.MessageUnboxed, error)
 	UpgradeKBFSToImpteam(ctx context.Context, tlfName string, tlfID chat1.TLFID, public bool) error
-	UnboxMobilePushNotification(ctx context.Context, uid gregor1.UID,
-		convID chat1.ConversationID, membersType chat1.ConversationMembersType, payload string) (string, error)
-	AckMobileNotificationSuccess(ctx context.Context, pushIDs []string)
 }
 
 // Resolver resolves human-readable usernames (joe) and user asssertions (joe+joe@github)

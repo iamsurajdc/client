@@ -126,6 +126,10 @@ func (j *JSONLocalDb) OpenTransaction() (JSONLocalDbTransaction, error) {
 	return jtr, nil
 }
 
+func (j *JSONLocalDb) GetEngine() LocalDb {
+	return j.engine
+}
+
 type JSONLocalDbTransaction struct {
 	tr LocalDbTransaction
 }
@@ -168,6 +172,7 @@ const (
 	DBTeamChain         = 0x10
 	DBUserPlusAllKeysV1 = 0x19
 
+	DBTeamAuditor              = 0xce
 	DBAttachmentUploader       = 0xcf
 	DBDiskLRUEntries           = 0xda
 	DBDiskLRUIndex             = 0xdb
@@ -200,7 +205,7 @@ const (
 	DBIdentify                 = 0xfa
 	DBResolveUsernameToUID     = 0xfb
 	DBChatBodyHashIndex        = 0xfc
-	DBPvl                      = 0xfd
+	DBMerkleStore              = 0xfd
 	DBChatConvFailures         = 0xfe
 	DBTeamList                 = 0xff
 )
