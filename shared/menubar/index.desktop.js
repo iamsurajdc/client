@@ -17,7 +17,6 @@ export type Props = {
   logIn: () => void,
   loggedIn: boolean,
   updateNow: () => void,
-  onFolderClick: (path: ?string) => void,
   onRekey: (path: string) => void,
   openApp: (tab: ?string) => void,
   outOfDate?: ConfigTypes.OutOfDate,
@@ -166,11 +165,6 @@ class MenubarRender extends React.Component<Props, State> {
       {title: 'Help', onClick: this.props.showHelp},
       {title: 'Quit app', onClick: this.props.quit},
     ]
-  }
-
-  _onAdd(path: string) {
-    this.props.onFolderClick(path)
-    this.props.refresh()
   }
 
   _getAttachmentRef = () => this.attachmentRef.current
