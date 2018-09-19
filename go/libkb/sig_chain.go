@@ -39,8 +39,12 @@ type ChainLinks []*ChainLink
 //    consuming client can safely ignore those details.
 //
 
+type BaseSigChain interface {
+	VerifyChain(m MetaContext) (err error)
+}
 type SigChain struct {
 	Contextified
+	BaseSigChain
 
 	uid               keybase1.UID
 	username          NormalizedUsername
@@ -281,6 +285,7 @@ func (sc *SigChain) LoadServerBody(m MetaContext, body []byte, low keybase1.Seqn
 
 	numEntries := 0
 
+	// TODO: some of this logic can be extracted to a pure function and reused
 	jsonparser.ArrayEach(body, func(value []byte, dataType jsonparser.ValueType, offset int, inErr error) {
 
 		var link *ChainLink
@@ -965,7 +970,13 @@ var PublicChain = &ChainType{
 
 //========================================================================
 
+type BaseSigChainLoader interface {
+	Load() (ret *BaseSigChain, err error)
+	LoadFromServer() (err error)
+	VerifySigsAndComputeKeys() (err error)
+}
 type SigChainLoader struct {
+	BaseSigChainLoader
 	MetaContextified
 	user                 *User
 	self                 bool
