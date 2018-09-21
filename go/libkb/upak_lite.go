@@ -34,7 +34,7 @@ func LoadUPAKLite(arg LoadUserArg) (ret *keybase1.UpkLitev1AllIncarnations, err 
 	if err != nil {
 		return nil, err
 	}
-	return highChain.ToUPAKLite()
+	return highChain.ToUPAKLite(user)
 }
 
 type HighSigChainLoader struct {
@@ -106,12 +106,8 @@ func (l *HighSigChainLoader) LoadFromServer() (err error) {
 }
 
 func (hsc *HighSigChain) LoadFromServer(m MetaContext, t *MerkleTriple, selfUID keybase1.UID) (dirtyTail *MerkleTriple, err error) {
-	// hit the api and get the sigs
-	// parse and Unpack() them into chainlinks and put them on the chain
-	// and verify some basic stuff like the uid, seqno
-	// with a little work over in sig_chain.go, there's some reusable code here
-
 	// get the high sigs from the server
+	// ------------------
 	m, tbs := m.WithTimeBuckets()
 
 	apiArg := APIArg{
@@ -158,7 +154,6 @@ func (hsc *HighSigChain) LoadFromServer(m MetaContext, t *MerkleTriple, selfUID 
 		return nil, err
 	}
 	if !foundTail {
-		// the server needs to send the last link as well as all the high links :(
 		err = fmt.Errorf("Last link is not the tail")
 		return nil, err
 	}
@@ -203,13 +198,12 @@ func (l *HighSigChainLoader) VerifySigsAndComputeKeys() (err error) {
 	return err
 }
 
-func (hsc *HighSigChain) VerifySigsAndComputeKeys(m MetaContext, eldest keybase1.KID, ckf *ComputedKeyFamily) (bool, error) {
-	// call verifySubchain, which is hopefully close to completely reusable
-
-	// if cached, ckf.cki, err = sc.verifySubchain(m, *ckf.kf, links); err != nil {
-	// 	return cached, len(links), err
-	// }
-
+func (hsc *HighSigChain) VerifySigsAndComputeKeys(m MetaContext, eldest keybase1.KID, ckf *ComputedKeyFamily) (cached bool, err error) {
+	un := hsc.username
+	_, ckf.cki, err = verifySubchain(m, un, *ckf.kf, hsc.chainLinks)
+	if err != nil {
+		return false, err
+	}
 	return false, nil
 }
 
@@ -221,15 +215,53 @@ func (l *HighSigChainLoader) GetMerkleTriple() (ret *MerkleTriple) {
 	return
 }
 
-func (hsc HighSigChain) ToUPAKLite() (ret *keybase1.UpkLitev1AllIncarnations, err error) {
+func (hsc HighSigChain) ToUPAKLite(user *User) (ret *keybase1.UpkLitev1AllIncarnations, err error) {
 	// this method probably shouldn't be on the Highsigchain, but should instead be
 	// a top level thing that takes one. this is easier for now.
+	kf := user.GetKeyFamily()
+	uid := user.GetUID()
+	name := user.GetName()
+	status := user.GetStatus()
+
+	eldestSeqno := hsc.chainLinks[0].GetSeqno()
+	cki := hsc.GetComputedKeyInfos()
+
+	deviceKeys := make(map[keybase1.KID]keybase1.PublicKeyV2NaCl)
+	pgpSummaries := make(map[keybase1.KID]keybase1.PublicKeyV2PGPSummary)
+	if cki != nil {
+		for kid := range cki.Infos {
+			if KIDIsPGP(kid) {
+				pgpSummaries[kid] = cki.exportPGPKeyV2(kid, kf)
+			} else {
+				deviceKeys[kid] = cki.exportDeviceKeyV2(kid)
+			}
+		}
+	}
+
+	current := keybase1.UpkLitev1{
+		Uid:         uid,
+		Username:    name,
+		EldestSeqno: eldestSeqno,
+		Status:      status,
+		DeviceKeys:  deviceKeys,
+	}
+
 	final := keybase1.UpkLitev1AllIncarnations{
-		Current: keybase1.UpkLitev1{
-			Username: hsc.username.String(),
-			Uid:      hsc.uid,
-		},
+		Current: current,
 	}
 	ret = &final
 	return ret, err
+}
+
+func (hsc HighSigChain) GetComputedKeyInfos() (cki *ComputedKeyInfos) {
+	cki = hsc.localCki
+	if cki == nil {
+		if l := last(hsc.chainLinks); l != nil {
+			if l.cki == nil {
+				hsc.G().Log.Debug("GetComputedKeyInfos: l.cki is nil")
+			}
+			cki = l.cki
+		}
+	}
+	return cki
 }

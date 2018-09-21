@@ -41,6 +41,7 @@ type ChainLinks []*ChainLink
 
 type BaseSigChain interface {
 	VerifyChain(m MetaContext) (err error)
+	GetComputedKeyInfos() (cki *ComputedKeyInfos)
 }
 type SigChain struct {
 	Contextified
