@@ -22,9 +22,9 @@ func LoadUPAKLite(arg LoadUserArg) (ret *keybase1.UpkLitev1AllIncarnations, err 
 	if err != nil {
 		return nil, err
 	}
-	// TODO: this is heavy-handed, especially for big users.
-	// i'm pretty sure we can get what we need by requesting much
-	// less data from the server than going through user/lookup.
+	// This might be a little heavy-handed, especially for big users.
+	// Perhaps we can get what we need by requesting less data from
+	// the server than going through user/lookup.
 	user, err := LoadUserFromServer(m, uid, nil)
 	if err != nil {
 		return nil, err
@@ -174,14 +174,20 @@ func (hsc *HighSigChain) VerifyChain(m MetaContext) (err error) {
 		}
 		if i > 0 {
 			prev := hsc.chainLinks[i-1]
-			if curr.GetHighSkip() == nil {
-				// TODO: fallback to normal prevs if the link doesn't have a high_skip
-				return fmt.Errorf("link at seqno %d doesn't have a high skip", curr.GetSeqno())
+			var expectedPrevID LinkID
+			var expectedPrevSeqno keybase1.Seqno
+			if curr.GetHighSkip() != nil {
+				expectedPrevSeqno = curr.GetHighSkip().Seqno
+				expectedPrevID = curr.GetHighSkip().Hash
+			} else {
+				// fallback to normal prevs if the link doesn't have a high_skip
+				expectedPrevSeqno = curr.GetSeqno() - 1
+				expectedPrevID = curr.GetPrev()
 			}
-			if !prev.id.Eq(curr.GetHighSkip().Hash) {
+			if !prev.id.Eq(expectedPrevID) {
 				return ChainLinkPrevHashMismatchError{fmt.Sprintf("Chain mismatch at seqno=%d", curr.GetSeqno())}
 			}
-			if prev.GetSeqno() != curr.GetHighSkip().Seqno {
+			if prev.GetSeqno() != expectedPrevSeqno {
 				return ChainLinkWrongSeqnoError{fmt.Sprintf("Chain seqno mismatch at seqno=%d (previous=%d)", curr.GetSeqno(), prev.GetSeqno())}
 			}
 		}
