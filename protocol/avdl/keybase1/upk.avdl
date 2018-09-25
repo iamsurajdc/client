@@ -117,7 +117,7 @@ protocol UPK {
   }
 
   // only latest incarnation
-  record UpkLitev1 {
+  record UpkLiteV1 {
       UID uid;
       string username;
       Seqno eldestSeqno;
@@ -126,9 +126,9 @@ protocol UPK {
       map<KID, PublicKeyV2NaCl> deviceKeys;
   }
 
-  record UpkLitev1AllIncarnations {
-      UpkLitev1 current;
-      array<UpkLitev1> pastIncarnations;
+  record UpkLiteV1AllIncarnations {
+      UpkLiteV1 current;
+      array<UpkLiteV1> pastIncarnations;
       map<Seqno, LinkID> seqnoLinkIDs;
       UpkLiteMinorVersion minorVersion;
   }

@@ -58,7 +58,7 @@ func (c *cmdUPAK) Run() error {
 		if err != nil {
 			return err
 		}
-		jsonOut, err := json.Marshal(upakLite)
+		jsonOut, err := json.MarshalIndent(upakLite, "", "  ")
 		if err != nil {
 			return err
 		}

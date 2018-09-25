@@ -2726,8 +2726,8 @@ export type UnixTime = Long
 export type UpPointer = $ReadOnly<{ourSeqno: Seqno, parentID: TeamID, parentSeqno: Seqno, deletion: Boolean}>
 export type UpkLiteMinorVersion = 0 // V0_0
 
-export type UpkLitev1 = $ReadOnly<{uid: UID, username: String, eldestSeqno: Seqno, status: StatusCode, deviceKeys: {[key: string]: PublicKeyV2NaCl}}>
-export type UpkLitev1AllIncarnations = $ReadOnly<{current: UpkLitev1, pastIncarnations?: ?Array<UpkLitev1>, seqnoLinkIDs: {[key: string]: LinkID}, minorVersion: UpkLiteMinorVersion}>
+export type UpkLiteV1 = $ReadOnly<{uid: UID, username: String, eldestSeqno: Seqno, status: StatusCode, deviceKeys: {[key: string]: PublicKeyV2NaCl}}>
+export type UpkLiteV1AllIncarnations = $ReadOnly<{current: UpkLiteV1, pastIncarnations?: ?Array<UpkLiteV1>, seqnoLinkIDs: {[key: string]: LinkID}, minorVersion: UpkLiteMinorVersion}>
 export type User = $ReadOnly<{uid: UID, username: String}>
 export type UserCard = $ReadOnly<{following: Int, followers: Int, uid: UID, fullName: String, location: String, bio: String, website: String, twitter: String, youFollowThem: Boolean, theyFollowYou: Boolean, teamShowcase?: ?Array<UserTeamShowcase>}>
 export type UserEk = $ReadOnly<{seed: Bytes32, metadata: UserEkMetadata}>

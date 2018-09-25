@@ -361,7 +361,7 @@
     },
     {
       "type": "record",
-      "name": "UpkLitev1",
+      "name": "UpkLiteV1",
       "fields": [
         {
           "type": "UID",
@@ -391,16 +391,16 @@
     },
     {
       "type": "record",
-      "name": "UpkLitev1AllIncarnations",
+      "name": "UpkLiteV1AllIncarnations",
       "fields": [
         {
-          "type": "UpkLitev1",
+          "type": "UpkLiteV1",
           "name": "current"
         },
         {
           "type": {
             "type": "array",
-            "items": "UpkLitev1"
+            "items": "UpkLiteV1"
           },
           "name": "pastIncarnations"
         },

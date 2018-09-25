@@ -3,28 +3,19 @@ package libkb
 import (
 	"fmt"
 	"io/ioutil"
-	"time"
 
 	"github.com/buger/jsonparser"
 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
 )
 
-func LoadUPAKLite(arg LoadUserArg) (ret *keybase1.UpkLitev1AllIncarnations, err error) {
+func LoadUPAKLite(arg LoadUserArg) (ret *keybase1.UpkLiteV1AllIncarnations, err error) {
 	uid := arg.uid
 	m := arg.m
 
-	// get sig hints in order to populate during merkle leaf lookup
-	sigHints, err := LoadSigHints(m, arg.uid)
+	leaf, err := lookupMerkleLeaf(m, uid, false, nil)
 	if err != nil {
 		return nil, err
 	}
-	leaf, err := lookupMerkleLeaf(m, uid, false, sigHints)
-	if err != nil {
-		return nil, err
-	}
-	// This might be a little heavy-handed, especially for big users.
-	// Perhaps we can get what we need by requesting less data from
-	// the server than going through user/lookup.
 	user, err := LoadUserFromServer(m, uid, nil)
 	if err != nil {
 		return nil, err
@@ -38,7 +29,6 @@ func LoadUPAKLite(arg LoadUserArg) (ret *keybase1.UpkLitev1AllIncarnations, err 
 }
 
 type HighSigChainLoader struct {
-	BaseSigChainLoader
 	MetaContextified
 	user      *User
 	leaf      *MerkleUserLeaf
@@ -50,14 +40,10 @@ type HighSigChainLoader struct {
 }
 
 type HighSigChain struct {
-	BaseSigChain
 	Contextified
-	uid                  keybase1.UID
-	username             NormalizedUsername
-	chainLinks           ChainLinks
-	localCki             *ComputedKeyInfos
-	localChainTail       *MerkleTriple
-	localChainUpdateTime time.Time
+	uid        keybase1.UID
+	username   NormalizedUsername
+	chainLinks ChainLinks
 }
 
 func NewHighSigChainLoader(m MetaContext, user *User, leaf *MerkleUserLeaf) *HighSigChainLoader {
@@ -95,14 +81,15 @@ func (l *HighSigChainLoader) Load() (ret *HighSigChain, err error) {
 }
 
 func (l *HighSigChainLoader) selfUID() (uid keybase1.UID) {
-	//for now let's always assume this isn't applicable, but we can add it later
-	return
+	// for now let's always assume this isn't applicable, because there's
+	// no distinction for loading yourself
+	return uid
 }
 
 func (l *HighSigChainLoader) LoadFromServer() (err error) {
 	srv := l.GetMerkleTriple()
 	l.dirtyTail, err = l.chain.LoadFromServer(l.M(), srv, l.selfUID())
-	return
+	return err
 }
 
 func (hsc *HighSigChain) LoadFromServer(m MetaContext, t *MerkleTriple, selfUID keybase1.UID) (dirtyTail *MerkleTriple, err error) {
@@ -164,11 +151,14 @@ func (hsc *HighSigChain) LoadFromServer(m MetaContext, t *MerkleTriple, selfUID 
 }
 
 func (hsc *HighSigChain) VerifyChain(m MetaContext) (err error) {
-	// for each link, call VerifyLink on it
-	// also check the hprevs and seqnos and link.CheckNameAndID
-	// set that it's highChainVerified
+	m.CDebugf("+ HighSigChain#VerifyChain()")
+	defer func() {
+		m.CDebugf("- HighSigChain#VerifyChain() -> %s", ErrToOk(err))
+	}()
+
 	for i := len(hsc.chainLinks) - 1; i >= 0; i-- {
 		curr := hsc.chainLinks[i]
+		m.VLogf(VLog1, "| verify high chain link %d (%s)", curr.GetSeqno(), curr.id)
 		if err = curr.VerifyLink(); err != nil {
 			return err
 		}
@@ -184,6 +174,11 @@ func (hsc *HighSigChain) VerifyChain(m MetaContext) (err error) {
 				expectedPrevSeqno = curr.GetSeqno() - 1
 				expectedPrevID = curr.GetPrev()
 			}
+			if i == 0 && (expectedPrevSeqno != 0 || expectedPrevID != nil) {
+				return ChainLinkPrevHashMismatchError{
+					fmt.Sprintf("The first link should have 0,nil for it's expected previous. It had %d, %s", expectedPrevSeqno, expectedPrevID),
+				}
+			}
 			if !prev.id.Eq(expectedPrevID) {
 				return ChainLinkPrevHashMismatchError{fmt.Sprintf("Chain mismatch at seqno=%d", curr.GetSeqno())}
 			}
@@ -194,9 +189,12 @@ func (hsc *HighSigChain) VerifyChain(m MetaContext) (err error) {
 		if err = curr.CheckNameAndID(hsc.username, hsc.uid); err != nil {
 			return err
 		}
+		// this isn't being used for anything right now, but it might be useful
+		// if we ever want to do caching, especially as it can be distinguished
+		// from the other field, chainVerified
 		curr.highChainVerified = true
 	}
-	return
+	return nil
 }
 
 func (l *HighSigChainLoader) VerifySigsAndComputeKeys() (err error) {
@@ -218,10 +216,10 @@ func (l *HighSigChainLoader) GetMerkleTriple() (ret *MerkleTriple) {
 	if l.leaf != nil {
 		ret = l.chainType.GetMerkleTriple(l.leaf)
 	}
-	return
+	return ret
 }
 
-func (hsc HighSigChain) ToUPAKLite(user *User) (ret *keybase1.UpkLitev1AllIncarnations, err error) {
+func (hsc HighSigChain) ToUPAKLite(user *User) (ret *keybase1.UpkLiteV1AllIncarnations, err error) {
 	// this method probably shouldn't be on the Highsigchain, but should instead be
 	// a top level thing that takes one. this is easier for now.
 	kf := user.GetKeyFamily()
@@ -244,7 +242,7 @@ func (hsc HighSigChain) ToUPAKLite(user *User) (ret *keybase1.UpkLitev1AllIncarn
 		}
 	}
 
-	current := keybase1.UpkLitev1{
+	current := keybase1.UpkLiteV1{
 		Uid:         uid,
 		Username:    name,
 		EldestSeqno: eldestSeqno,
@@ -252,7 +250,7 @@ func (hsc HighSigChain) ToUPAKLite(user *User) (ret *keybase1.UpkLitev1AllIncarn
 		DeviceKeys:  deviceKeys,
 	}
 
-	final := keybase1.UpkLitev1AllIncarnations{
+	final := keybase1.UpkLiteV1AllIncarnations{
 		Current: current,
 	}
 	ret = &final
@@ -260,7 +258,6 @@ func (hsc HighSigChain) ToUPAKLite(user *User) (ret *keybase1.UpkLitev1AllIncarn
 }
 
 func (hsc HighSigChain) GetComputedKeyInfos() (cki *ComputedKeyInfos) {
-	cki = hsc.localCki
 	if cki == nil {
 		if l := last(hsc.chainLinks); l != nil {
 			if l.cki == nil {

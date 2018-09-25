@@ -602,8 +602,8 @@
           "type": "UID"
         }
       ],
-      "response": "UpkLitev1AllIncarnations",
-      "doc": "getUPAKLite returns a UpkLitev1AllIncarnations. Used mainly for debugging.",
+      "response": "UpkLiteV1AllIncarnations",
+      "doc": "getUPAKLite returns a UpkLiteV1AllIncarnations. Used mainly for debugging.",
       "lint": "ignore"
     },
     "uploadUserAvatar": {

@@ -45,7 +45,6 @@ type BaseSigChain interface {
 }
 type SigChain struct {
 	Contextified
-	BaseSigChain
 
 	uid               keybase1.UID
 	username          NormalizedUsername
@@ -674,7 +673,7 @@ func verifySubchain(m MetaContext, un NormalizedUsername, kf KeyFamily, links Ch
 				// So that the server can't roll back someone's active wallet address.
 				return cached, cki, SigchainV2StubbedDisallowed{}
 			}
-			m.G().VDL.Log(VLog1, "| Skipping over stubbed-out link: %s", link.id)
+			m.VLogf(VLog1, "| Skipping over stubbed-out link: %s", link.id)
 			continue
 		}
 
@@ -683,7 +682,7 @@ func verifySubchain(m MetaContext, un NormalizedUsername, kf KeyFamily, links Ch
 			w.Warn(m.G())
 		}
 
-		m.G().VDL.Log(VLog1, "| Verify link: %s", link.id)
+		m.VLogf(VLog1, "| Verify link: %s", link.id)
 
 		if first {
 			if err = ckf.InsertEldestLink(tcl, un); err != nil {
@@ -701,7 +700,7 @@ func verifySubchain(m MetaContext, un NormalizedUsername, kf KeyFamily, links Ch
 		isModifyingKeys := isDelegating || tcl.Type() == string(DelegationTypePGPUpdate)
 		isFinalLink := (linkIndex == len(links)-1)
 		hasRevocations := link.HasRevocations()
-		m.G().VDL.Log(VLog1, "| isDelegating: %v, isModifyingKeys: %v, isFinalLink: %v, hasRevocations: %v",
+		m.VLogf(VLog1, "| isDelegating: %v, isModifyingKeys: %v, isFinalLink: %v, hasRevocations: %v",
 			isDelegating, isModifyingKeys, isFinalLink, hasRevocations)
 
 		if pgpcl, ok := tcl.(*PGPUpdateChainLink); ok {
@@ -976,7 +975,6 @@ type BaseSigChainLoader interface {
 	VerifySigsAndComputeKeys() (err error)
 }
 type SigChainLoader struct {
-	BaseSigChainLoader
 	MetaContextified
 	user                 *User
 	self                 bool
