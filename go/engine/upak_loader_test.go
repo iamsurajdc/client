@@ -17,41 +17,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-func assertUPAKLiteMatchesUPAK(t *testing.T, tc libkb.TestContext, uid keybase1.UID) {
-	ctx := context.TODO()
-	loadArg := libkb.NewLoadUserByUIDArg(ctx, tc.G, uid)
-	upak, _, err := tc.G.GetUPAKLoader().LoadV2(loadArg)
-	require.NoError(t, err)
-	loadArg.ForUPAKLite()
-	upakLite, err := tc.G.GetUPAKLoader().LoadLite(loadArg)
-	require.NoError(t, err)
-	require.Equal(t, upakLite.Current.Uid, upak.Current.Uid)
-}
-
-func TestLoadLite(t *testing.T) {
-	tc := SetupEngineTest(t, "loadlite")
-	defer tc.Cleanup()
-
-	t.Logf("create new user")
-	fu := CreateAndSignupFakeUser(tc, "jim")
-	uid := fu.UID()
-	// basic new user
-	assertUPAKLiteMatchesUPAK(t, tc, uid)
-
-	// add a new high link (a new PGP key) and test
-	uis := libkb.UIs{LogUI: tc.G.UI.GetLogUI(), SecretUI: fu.NewSecretUI()}
-	_, _, key := armorKey(t, tc, fu.Email)
-	eng, err := NewPGPKeyImportEngineFromBytes(tc.G, []byte(key), true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	m := NewMetaContextForTest(tc).WithUIs(uis)
-	if err := RunEngine2(m, eng); err != nil {
-		t.Fatal(err)
-	}
-	assertUPAKLiteMatchesUPAK(t, tc, uid)
-}
-
 func TestLoadDeviceKeyNew(t *testing.T) {
 	tc := SetupEngineTest(t, "clu")
 	defer tc.Cleanup()
