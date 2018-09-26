@@ -60,6 +60,8 @@ func newGregorTestConnection(g *globals.Context, uid gregor1.UID, sessionToken s
 	}
 }
 
+const testMaxFrameLength = 10 * 1024
+
 func (g *gregorTestConnection) Connect(ctx context.Context) (err error) {
 	defer g.Trace(ctx, func() error { return err }, "Connect")()
 	uri, err := rpc.ParseFMPURI(g.G().Env.GetGregorURI())
@@ -70,7 +72,7 @@ func (g *gregorTestConnection) Connect(ctx context.Context) (err error) {
 		TagsFunc:      logger.LogTagsFromContextRPC,
 		WrapErrorFunc: libkb.MakeWrapError(g.G().ExternalG()),
 	}
-	trans := rpc.NewConnectionTransport(uri, libkb.NewRPCLogFactory(g.G().ExternalG()), libkb.MakeWrapError(g.G().ExternalG()))
+	trans := rpc.NewConnectionTransport(uri, libkb.NewRPCLogFactory(g.G().ExternalG()), libkb.MakeWrapError(g.G().ExternalG()), testMaxFrameLength)
 	conn := rpc.NewConnectionWithTransport(g, trans,
 		libkb.NewContextifiedErrorUnwrapper(g.G().ExternalG()),
 		logger.LogOutputWithDepthAdder{Logger: g.G().Log}, opts)
