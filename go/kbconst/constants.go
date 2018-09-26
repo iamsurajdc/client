@@ -32,3 +32,7 @@ const MaxGregorFrameLength = defaultMaxFrameLength
 // MaxProvisionFrameLength is the maximum frame length for
 // provisioning.
 const MaxProvisionFrameLength = defaultMaxFrameLength
+
+// MaxServiceFrameLength is the maximum frame length for communicating
+// with the service.
+const MaxServiceFrameLength = defaultMaxFrameLength

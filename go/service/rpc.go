@@ -12,6 +12,7 @@ import (
 type connTransport struct {
 	libkb.Contextified
 	host            string
+	maxFrameLength  int32
 	conn            net.Conn
 	transport       rpc.Transporter
 	stagedTransport rpc.Transporter
@@ -19,10 +20,11 @@ type connTransport struct {
 
 var _ rpc.ConnectionTransport = (*connTransport)(nil)
 
-func newConnTransport(g *libkb.GlobalContext, host string) *connTransport {
+func newConnTransport(g *libkb.GlobalContext, host string, maxFrameLength int32) *connTransport {
 	return &connTransport{
-		Contextified: libkb.NewContextified(g),
-		host:         host,
+		Contextified:   libkb.NewContextified(g),
+		host:           host,
+		maxFrameLength: maxFrameLength,
 	}
 }
 
@@ -32,7 +34,7 @@ func (t *connTransport) Dial(context.Context) (rpc.Transporter, error) {
 	if err != nil {
 		return nil, err
 	}
-	t.stagedTransport = rpc.NewTransport(t.conn, libkb.NewRPCLogFactory(t.G()), libkb.MakeWrapError(t.G()), libkb.MaxServiceFrameLength)
+	t.stagedTransport = rpc.NewTransport(t.conn, libkb.NewRPCLogFactory(t.G()), libkb.MakeWrapError(t.G()), t.maxFrameLength)
 	return t.stagedTransport, nil
 }
 

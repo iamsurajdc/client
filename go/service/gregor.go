@@ -22,6 +22,7 @@ import (
 	"github.com/keybase/client/go/gregor"
 	grclient "github.com/keybase/client/go/gregor/client"
 	"github.com/keybase/client/go/gregor/storage"
+	"github.com/keybase/client/go/kbconst"
 	"github.com/keybase/client/go/libkb"
 	"github.com/keybase/client/go/logger"
 	"github.com/keybase/client/go/protocol/chat1"
@@ -454,9 +455,9 @@ func (g *gregorHandler) Connect(uri *rpc.FMPURI) (err error) {
 
 	g.uri = uri
 	if uri.UseTLS() {
-		err = g.connectTLS()
+		err = g.connectTLS(kbconst.MaxGregorFrameLength)
 	} else {
-		err = g.connectNoTLS()
+		err = g.connectNoTLS(kbconst.MaxGregorFrameLength)
 	}
 
 	return err
@@ -1533,11 +1534,8 @@ func (g *gregorHandler) chatAwareInitialReconnectBackoffWindow(ctx context.Conte
 	return 0
 }
 
-// Frames to/from Gregor shouldn't be more than 1MiB.
-const maxGregorFrameLength = 1024 * 1024
-
 // connMutex must be locked before calling this
-func (g *gregorHandler) connectTLS() error {
+func (g *gregorHandler) connectTLS(maxFrameLength int32) error {
 	ctx := context.Background()
 	if g.conn != nil {
 		g.chatLog.Debug(ctx, "skipping connect, conn is not nil")
@@ -1567,7 +1565,7 @@ func (g *gregorHandler) connectTLS() error {
 		[]byte(rawCA), libkb.NewContextifiedErrorUnwrapper(g.G().ExternalG()),
 		g, libkb.NewRPCLogFactory(g.G().ExternalG()),
 		logger.LogOutputWithDepthAdder{Logger: g.G().Log},
-		maxGregorFrameLength, opts)
+		maxFrameLength, opts)
 
 	// The client we get here will reconnect to gregord on disconnect if necessary.
 	// We should grab it here instead of in OnConnect, since the connection is not
@@ -1586,7 +1584,7 @@ func (g *gregorHandler) connectTLS() error {
 }
 
 // connMutex must be locked before calling this
-func (g *gregorHandler) connectNoTLS() error {
+func (g *gregorHandler) connectNoTLS(maxFrameLength int32) error {
 	ctx := context.Background()
 	if g.conn != nil {
 		g.chatLog.Debug(ctx, "skipping connect, conn is not nil")
@@ -1594,7 +1592,7 @@ func (g *gregorHandler) connectNoTLS() error {
 	}
 	uri := g.uri
 	g.chatLog.Debug(ctx, "connecting to gregord without TLS at %s", uri)
-	t := newConnTransport(g.G().ExternalG(), uri.HostPort)
+	t := newConnTransport(g.G().ExternalG(), uri.HostPort, maxFrameLength)
 	g.transportForTesting = t
 
 	opts := rpc.ConnectionOpts{

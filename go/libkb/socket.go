@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/keybase/client/go/kbconst"
 	"github.com/keybase/client/go/logger"
 	"github.com/keybase/go-framed-msgpack-rpc/rpc"
 )
@@ -50,11 +51,8 @@ func (g *GlobalContext) BindToSocket() (net.Listener, error) {
 	return g.SocketInfo.BindToSocket()
 }
 
-// Frames to/from the service shouldn't be more than 10MiB.
-const MaxServiceFrameLength = 10 * 1024 * 1024
-
 func NewTransportFromSocket(g *GlobalContext, s net.Conn) rpc.Transporter {
-	return rpc.NewTransport(s, NewRPCLogFactory(g), MakeWrapError(g), MaxServiceFrameLength)
+	return rpc.NewTransport(s, NewRPCLogFactory(g), MakeWrapError(g), kbconst.MaxServiceFrameLength)
 }
 
 // ResetSocket clears and returns a new socket
