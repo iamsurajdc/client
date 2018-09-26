@@ -25,14 +25,23 @@ const KBFSLogFileName = "keybase.kbfs.log"
 
 const defaultMaxFrameLength = 50 * 1024 * 1024
 
+// All the frame length constants are here since multiple places need
+// to agree on the same value. For now, set it to a reasonably high
+// default value, but depending on the service the max frame length
+// can be much smaller.
+//
+// If you're changing the constants below, you likely want to change
+// constants on the server side, too (except for
+// MaxServiceFrameLength).
+
 // MaxGregorFrameLength is the maximum frame length that gregor
 // accepts.
 const MaxGregorFrameLength = defaultMaxFrameLength
 
-// MaxProvisionFrameLength is the maximum frame length for
-// provisioning.
+// MaxProvisionFrameLength is the maximum frame length that the
+// provisioning message router accepts.
 const MaxProvisionFrameLength = defaultMaxFrameLength
 
 // MaxServiceFrameLength is the maximum frame length for communicating
-// with the service.
+// with the local service.
 const MaxServiceFrameLength = defaultMaxFrameLength
