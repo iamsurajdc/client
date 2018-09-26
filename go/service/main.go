@@ -156,7 +156,7 @@ func (d *Service) RegisterProtocols(srv *rpc.Server, xp rpc.Transporter, connID 
 }
 
 func (d *Service) Handle(c net.Conn) {
-	xp := rpc.NewTransport(c, libkb.NewRPCLogFactory(d.G()), libkb.MakeWrapError(d.G()), MaxServiceFrameLength)
+	xp := rpc.NewTransport(c, libkb.NewRPCLogFactory(d.G()), libkb.MakeWrapError(d.G()), libkb.MaxServiceFrameLength)
 
 	server := rpc.NewServer(xp, libkb.MakeWrapError(d.G()))
 

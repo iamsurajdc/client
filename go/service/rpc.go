@@ -32,7 +32,7 @@ func (t *connTransport) Dial(context.Context) (rpc.Transporter, error) {
 	if err != nil {
 		return nil, err
 	}
-	t.stagedTransport = rpc.NewTransport(t.conn, libkb.NewRPCLogFactory(t.G()), libkb.MakeWrapError(t.G()), MaxServiceFrameLength)
+	t.stagedTransport = rpc.NewTransport(t.conn, libkb.NewRPCLogFactory(t.G()), libkb.MakeWrapError(t.G()), libkb.MaxServiceFrameLength)
 	return t.stagedTransport, nil
 }
 
