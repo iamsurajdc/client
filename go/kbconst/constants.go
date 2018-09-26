@@ -23,10 +23,12 @@ const (
 // KBFSLogFileName is the name of the log file for KBFS.
 const KBFSLogFileName = "keybase.kbfs.log"
 
+const defaultMaxFrameLength = 50 * 1024 * 1024
+
 // MaxGregorFrameLength is the maximum frame length that gregor
 // accepts.
-const MaxGregorFrameLength = 50 * 1024 * 1024
+const MaxGregorFrameLength = defaultMaxFrameLength
 
 // MaxProvisionFrameLength is the maximum frame length for
 // provisioning.
-const MaxProvisionFrameLength = 100 * 1024
+const MaxProvisionFrameLength = defaultMaxFrameLength
