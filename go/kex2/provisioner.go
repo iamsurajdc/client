@@ -10,6 +10,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/keybase/client/go/kbconst"
 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
 	"github.com/keybase/go-framed-msgpack-rpc/rpc"
 )
@@ -119,7 +120,7 @@ func (p *provisioner) pickFirstConnection() (err error) {
 			return err
 		}
 		prot := keybase1.Kex2ProvisionerProtocol(p)
-		xp = rpc.NewTransport(conn, p.arg.Provisioner.GetLogFactory(), nil, maxProvisionFrameLength)
+		xp = rpc.NewTransport(conn, p.arg.Provisioner.GetLogFactory(), nil, kbconst.MaxProvisionFrameLength)
 		srv := rpc.NewServer(xp, nil)
 		if err = srv.Register(prot); err != nil {
 			return err
@@ -141,7 +142,7 @@ func (p *provisioner) pickFirstConnection() (err error) {
 		if p.conn, err = NewConn(p.arg.Ctx, p.arg.LogCtx, p.arg.Mr, sec, p.deviceID, p.arg.Timeout); err != nil {
 			return err
 		}
-		p.xp = rpc.NewTransport(p.conn, p.arg.Provisioner.GetLogFactory(), nil, maxProvisionFrameLength)
+		p.xp = rpc.NewTransport(p.conn, p.arg.Provisioner.GetLogFactory(), nil, kbconst.MaxProvisionFrameLength)
 	case <-p.arg.Ctx.Done():
 		err = ErrCanceled
 	case <-time.After(p.arg.Timeout):

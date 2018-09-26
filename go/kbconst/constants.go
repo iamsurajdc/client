@@ -26,3 +26,7 @@ const KBFSLogFileName = "keybase.kbfs.log"
 // MaxGregorFrameLength is the maximum frame length that gregor
 // accepts.
 const MaxGregorFrameLength = 50 * 1024 * 1024
+
+// MaxProvisionFrameLength is the maximum frame length for
+// provisioning.
+const MaxProvisionFrameLength = 100 * 1024

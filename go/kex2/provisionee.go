@@ -7,6 +7,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/keybase/client/go/kbconst"
 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
 	"github.com/keybase/go-framed-msgpack-rpc/rpc"
 	"golang.org/x/net/context"
@@ -155,7 +156,7 @@ func (p *provisionee) startServer(s Secret) (err error) {
 		keybase1.Kex2ProvisioneeProtocol(p),
 		keybase1.Kex2Provisionee2Protocol(p),
 	}
-	p.xp = rpc.NewTransport(p.conn, p.arg.Provisionee.GetLogFactory(), nil, maxProvisionFrameLength)
+	p.xp = rpc.NewTransport(p.conn, p.arg.Provisionee.GetLogFactory(), nil, kbconst.MaxProvisionFrameLength)
 	srv := rpc.NewServer(p.xp, nil)
 	for _, prot := range prots {
 		if err = srv.Register(prot); err != nil {
