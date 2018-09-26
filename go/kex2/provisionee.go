@@ -153,9 +153,9 @@ func (p *provisionee) startServer(s Secret) (err error) {
 	}
 	prots := []rpc.Protocol{
 		keybase1.Kex2ProvisioneeProtocol(p),
+		keybase1.Kex2Provisionee2Protocol(p),
 	}
-	prots = append(prots, keybase1.Kex2Provisionee2Protocol(p))
-	p.xp = rpc.NewTransport(p.conn, p.arg.Provisionee.GetLogFactory(), nil)
+	p.xp = rpc.NewTransport(p.conn, p.arg.Provisionee.GetLogFactory(), nil, maxFrameLength)
 	srv := rpc.NewServer(p.xp, nil)
 	for _, prot := range prots {
 		if err = srv.Register(prot); err != nil {

@@ -94,7 +94,7 @@ func (t *pingGregorTransport) Dial(context.Context) (rpc.Transporter, error) {
 	if err != nil {
 		return nil, err
 	}
-	t.stagedTransport = rpc.NewTransport(t.conn, nil, nil)
+	t.stagedTransport = rpc.NewTransport(t.conn, nil, nil, 100*1024)
 	return t.stagedTransport, nil
 }
 

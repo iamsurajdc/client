@@ -1533,6 +1533,9 @@ func (g *gregorHandler) chatAwareInitialReconnectBackoffWindow(ctx context.Conte
 	return 0
 }
 
+// Frames to/from Gregor shouldn't be more than 1MiB.
+const maxFrameLength = 1024 * 1024
+
 // connMutex must be locked before calling this
 func (g *gregorHandler) connectTLS() error {
 	ctx := context.Background()
@@ -1563,7 +1566,8 @@ func (g *gregorHandler) connectTLS() error {
 	g.conn = rpc.NewTLSConnection(rpc.NewFixedRemote(uri.HostPort),
 		[]byte(rawCA), libkb.NewContextifiedErrorUnwrapper(g.G().ExternalG()),
 		g, libkb.NewRPCLogFactory(g.G().ExternalG()),
-		logger.LogOutputWithDepthAdder{Logger: g.G().Log}, opts)
+		logger.LogOutputWithDepthAdder{Logger: g.G().Log},
+		maxFrameLength, opts)
 
 	// The client we get here will reconnect to gregord on disconnect if necessary.
 	// We should grab it here instead of in OnConnect, since the connection is not

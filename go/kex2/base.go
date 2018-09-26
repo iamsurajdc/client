@@ -38,3 +38,6 @@ type KexBaseArg struct {
 
 // ErrCanceled is returned if Kex is canceled by the caller via the Context argument
 var ErrCanceled = errors.New("kex canceled by caller")
+
+// Frames for provisioning shouldn't be more than 100KiB.
+const maxFrameLength = 100 * 1024

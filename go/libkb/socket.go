@@ -50,8 +50,11 @@ func (g *GlobalContext) BindToSocket() (net.Listener, error) {
 	return g.SocketInfo.BindToSocket()
 }
 
+// Frames to/from the daemon shouldn't be more than 10MiB.
+const maxFrameLength = 10 * 1024 * 1024
+
 func NewTransportFromSocket(g *GlobalContext, s net.Conn) rpc.Transporter {
-	return rpc.NewTransport(s, NewRPCLogFactory(g), MakeWrapError(g))
+	return rpc.NewTransport(s, NewRPCLogFactory(g), MakeWrapError(g), maxFrameLength)
 }
 
 // ResetSocket clears and returns a new socket

@@ -1496,6 +1496,9 @@ func CreateHiddenPlaceholder(msgID chat1.MessageID) chat1.MessageUnboxed {
 		})
 }
 
+// Chat frames to/from Gregor shouldn't be more than 1MiB.
+const maxFrameLength = 1024 * 1024
+
 func GetGregorConn(ctx context.Context, g *globals.Context, log DebugLabeler,
 	handler func(nist *libkb.NIST) rpc.ConnectionHandler) (conn *rpc.Connection, token gregor1.SessionToken, err error) {
 	// Get session token
@@ -1526,9 +1529,10 @@ func GetGregorConn(ctx context.Context, g *globals.Context, log DebugLabeler,
 		conn = rpc.NewTLSConnection(rpc.NewFixedRemote(uri.HostPort),
 			[]byte(rawCA), libkb.NewContextifiedErrorUnwrapper(g.ExternalG()),
 			handler(nist), libkb.NewRPCLogFactory(g.ExternalG()),
-			logger.LogOutputWithDepthAdder{Logger: g.Log}, rpc.ConnectionOpts{})
+			logger.LogOutputWithDepthAdder{Logger: g.Log},
+			maxFrameLength, rpc.ConnectionOpts{})
 	} else {
-		t := rpc.NewConnectionTransport(uri, nil, libkb.MakeWrapError(g.ExternalG()))
+		t := rpc.NewConnectionTransport(uri, nil, libkb.MakeWrapError(g.ExternalG()), maxFrameLength)
 		conn = rpc.NewConnectionWithTransport(handler(nist), t,
 			libkb.NewContextifiedErrorUnwrapper(g.ExternalG()),
 			logger.LogOutputWithDepthAdder{Logger: g.Log}, rpc.ConnectionOpts{})
