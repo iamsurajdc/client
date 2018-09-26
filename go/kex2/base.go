@@ -40,4 +40,4 @@ type KexBaseArg struct {
 var ErrCanceled = errors.New("kex canceled by caller")
 
 // Frames for provisioning shouldn't be more than 100KiB.
-const maxFrameLength = 100 * 1024
+const maxProvisionFrameLength = 100 * 1024
