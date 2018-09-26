@@ -87,6 +87,9 @@ func newConnTransport(host string) *pingGregorTransport {
 	}
 }
 
+// Ping frames should be very small.
+const maxPingFrameLength = 1024
+
 func (t *pingGregorTransport) Dial(context.Context) (rpc.Transporter, error) {
 	t.G().Log.Debug("pingGregorTransport Dial", t.host)
 	var err error
@@ -94,7 +97,8 @@ func (t *pingGregorTransport) Dial(context.Context) (rpc.Transporter, error) {
 	if err != nil {
 		return nil, err
 	}
-	t.stagedTransport = rpc.NewTransport(t.conn, nil, nil, 100*1024)
+
+	t.stagedTransport = rpc.NewTransport(t.conn, nil, nil, maxPingFrameLength)
 	return t.stagedTransport, nil
 }
 
