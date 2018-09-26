@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/keybase/cli"
+	"github.com/keybase/client/go/kbconst"
 	"github.com/keybase/client/go/libcmdline"
 	"github.com/keybase/client/go/libkb"
 	"github.com/keybase/client/go/logger"
@@ -81,15 +82,6 @@ type pingGregorTransport struct {
 
 var _ rpc.ConnectionTransport = (*pingGregorTransport)(nil)
 
-func newConnTransport(host string) *pingGregorTransport {
-	return &pingGregorTransport{
-		host: host,
-	}
-}
-
-// Ping frames should be very small.
-const maxPingFrameLength = 1024
-
 func (t *pingGregorTransport) Dial(context.Context) (rpc.Transporter, error) {
 	t.G().Log.Debug("pingGregorTransport Dial", t.host)
 	var err error
@@ -98,7 +90,7 @@ func (t *pingGregorTransport) Dial(context.Context) (rpc.Transporter, error) {
 		return nil, err
 	}
 
-	t.stagedTransport = rpc.NewTransport(t.conn, nil, nil, maxPingFrameLength)
+	t.stagedTransport = rpc.NewTransport(t.conn, nil, nil, kbconst.MaxGregorFrameLength)
 	return t.stagedTransport, nil
 }
 
